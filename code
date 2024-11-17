@@ -1,0 +1,74 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import joblib
+
+# Step 1: Simulate Vehicle Sensor Data
+
+# Simulate a DataFrame with vehicle sensor data (Engine Temperature, Tire Pressure, Brake Wear)
+np.random.seed(42)
+num_samples = 1000
+
+data = {
+    'engine_temperature': np.random.normal(90, 10, num_samples),  # Average temperature 90°C with some noise
+    'tire_pressure': np.random.normal(32, 3, num_samples),  # Tire pressure in PSI
+    'brake_wear': np.random.normal(5, 1, num_samples),  # Brake wear (1-10 scale)
+    'oil_level': np.random.normal(75, 10, num_samples),  # Oil level in percentage
+    'vehicle_age': np.random.normal(5, 2, num_samples),  # Age of vehicle in years
+    'failure_in_next_30_days': np.random.randint(0, 2, num_samples)  # 0 = No failure, 1 = Failure
+}
+
+df = pd.DataFrame(data)
+
+# Step 2: Data Preprocessing
+# Split the data into features (X) and target (y)
+X = df.drop('failure_in_next_30_days', axis=1)  # Features (sensor data)
+y = df['failure_in_next_30_days']  # Target (failure)
+
+# Split into training and testing datasets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Step 3: Model Training (Random Forest Classifier)
+# Train the Random Forest Classifier
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Step 4: Model Evaluation
+# Make predictions on the test set
+y_pred = model.predict(X_test)
+
+# Print evaluation metrics
+print("Classification Report:")
+print(classification_report(y_test, y_pred))
+
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+
+# Step 5: Feature Importance
+# Visualize the importance of each feature
+feature_importance = model.feature_importances_
+features = X.columns
+
+plt.barh(features, feature_importance)
+plt.xlabel("Feature Importance")
+plt.title("Feature Importance for Predictive Maintenance Model")
+plt.show()
+
+# Step 6: Save the Trained Model (for Deployment)
+joblib.dump(model, 'predictive_maintenance_model.pkl')
+
+# Step 7: Load and Use the Model for Predictions (Example of Deployment)
+# Load the model (in real-world application, this would be done on the edge device or cloud)
+loaded_model = joblib.load('predictive_maintenance_model.pkl')
+
+# Example input for prediction (a new vehicle's sensor data)
+new_vehicle_data = np.array([95, 30, 6, 80, 4]).reshape(1, -1)  # Example: Engine Temp, Tire Pressure, Brake Wear, Oil Level, Vehicle Age
+prediction = loaded_model.predict(new_vehicle_data)
+
+if prediction == 1:
+    print("Warning: Predictive Maintenance Alert! Vehicle component is likely to fail in the next 30 days.")
+else:
+    print("Vehicle is in good condition, no failure expected.")
